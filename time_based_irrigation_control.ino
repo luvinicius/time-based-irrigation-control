@@ -14,6 +14,7 @@
 #include <math.h>
 #include "types.h"
 
+
 // ---------------------------------------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------------------------------------
@@ -111,8 +112,8 @@ void setup() {
   schedulings[0][0] = buildScheduling(6, 40, 0, 60);
 
   relays[1] = buildRelay(RELAY_PORT_2);
-  schedulings[1][0] = buildScheduling(6, 40, 0, 60);
-  schedulings[1][1] = buildScheduling(10, 30, 0, 60);
+  schedulings[1][0] = buildScheduling(6, 40, 00, 60);
+  schedulings[1][1] = buildScheduling(10, 40, 0, 60);
 
   // Relays pin modes setup
   for (int i = 0; i < NUMBER_OF_RELAYS; i++) {
@@ -131,12 +132,14 @@ void loop() {
   tmElements_t tm;
 
   if (RTC.read(tm)) {
+    Serial.println("-------------------");
     print2digits(tm.Hour);
     Serial.write(':');
     print2digits(tm.Minute);
     Serial.write(':');
     print2digits(tm.Second);
     Serial.println();
+    Serial.println("-------------------");
 
     for (int i = 0; i < NUMBER_OF_RELAYS; i++) {
       Relay relay = relays[i];
@@ -153,30 +156,30 @@ void loop() {
           Serial.print("º schedule to ");
 
           if (isItInScheduledTime(tm, scheduling)) {
-            Serial.print("    It's on time!");
-            if (relay.currentState == HIGH) {
-              Serial.print("    Relay turns on!");
-              relay.currentState = LOW;
-              digitalWrite(relay.port, relay.currentState);
-              
-            } else {
-              Serial.print("    just wait...");
-            }
+            Serial.println("    It's on time!");
+            relay.currentState = LOW;
+            // Don't check other schedules, it's already on!
+            break;
           } else {
-            Serial.print("   Is not in time!");
-            if (relay.currentState == LOW) {
-              Serial.print("    Relay turns off!");
-              relay.currentState = HIGH;
-              digitalWrite(relay.port, relay.currentState);
-            } else {
-              Serial.print("    just wait...");
-            }
+            Serial.println("   Is not in time!");
+            relay.currentState = HIGH;
           }
-          Serial.println();
+          
         } else {
           Serial.println("    End of schedulings.");
           break;
         }
+      }
+      int relayRealState = digitalRead(relay.port);
+      if (relay.currentState != relayRealState) {
+        if (relay.currentState == LOW) {
+          Serial.println("    Relay turns ON!");
+        } else {
+          Serial.println("    Relay turns OFF!");
+        }
+        digitalWrite(relay.port, relay.currentState);
+      } else {
+        Serial.println("    just wait...");
       }
       relays[i] = relay;
       Serial.println();
